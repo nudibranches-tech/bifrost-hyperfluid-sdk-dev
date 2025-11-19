@@ -62,11 +62,14 @@ func main() {
 - `HYPERFLUID_BASE_URL` - API endpoint (default: `https://bifrost.hyperfluid.cloud`)
 
 ### Keycloak (alternative to token)
-- `KEYCLOAK_USERNAME` - Your username
-- `KEYCLOAK_PASSWORD` - Your password
 - `KEYCLOAK_BASE_URL` - Keycloak server
-- `KEYCLOAK_CLIENT_ID` - Client ID
 - `KEYCLOAK_REALM` - Realm name
+- `KEYCLOAK_CLIENT_ID` - Client ID (required for both grant types)
+- `KEYCLOAK_CLIENT_SECRET` - Client Secret (for Client Credentials Grant - preferred for services)
+- `KEYCLOAK_USERNAME` - Your username (for Password Grant - fallback if Client Secret not provided)
+- `KEYCLOAK_PASSWORD` - Your password (for Password Grant - fallback if Client Secret not provided)
+
+**Note:** If `KEYCLOAK_CLIENT_SECRET` is provided, the SDK will prioritize the more secure Client Credentials Grant. Otherwise, it will fall back to the Password Grant if `KEYCLOAK_USERNAME` and `KEYCLOAK_PASSWORD` are configured.
 
 ## Project Structure
 

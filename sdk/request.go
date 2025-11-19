@@ -57,7 +57,7 @@ func (c *Client) do(ctx context.Context, method, url string, body []byte) (*util
 			}
 
 			if resp.StatusCode == http.StatusUnauthorized {
-				if c.isKeycloakConfigured() {
+				if c.isKeycloakAuthMethodConfigured() {
 					if _, err := c.refreshToken(ctx); err == nil {
 						continue // Retry with the new token
 					}
