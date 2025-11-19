@@ -26,10 +26,11 @@ jobs:
     - name: Install pre-commit
       run: pip install pre-commit
 
+    - name: Install golangci-lint
+      run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.55.2
+
     - name: Run pre-commit
       run: pre-commit run --all-files
-      env:
-        CGO_ENABLED: 0
 
     - name: Run tests
       run: bash ./run_tests.sh
