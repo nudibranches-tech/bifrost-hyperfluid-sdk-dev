@@ -5,36 +5,28 @@
 set -e
 
 case "$1" in
-  setup)
-    echo "🔧 Running setup checks..."
-    go test -v ./sdk -run "^TestSetup"
-    ;;
   unit)
     echo "🧪 Running unit tests..."
-    go test -v ./developpement_tests
+    go test -v ./sdk
     ;;
   integration)
     echo "🔗 Running integration tests..."
-    go test -v ./developpement_tests
+    go test -v ./integration_tests
     ;;
   all)
     echo "🚀 Running all tests..."
     echo ""
-    echo "1️⃣ Setup checks..."
-    go test -v ./sdk -run "^TestSetup"
+    echo "1️⃣ Unit tests..."
+    go test -v ./sdk
     echo ""
-    echo "2️⃣ Unit tests..."
-    go test -v ./developpement_tests
-    echo ""
-    echo "3️⃣ Integration tests..."
-    go test -v ./developpement_tests
+    echo "2️⃣ Integration tests..."
+    go test -v ./integration_tests
     echo ""
     echo "✅ All tests completed!"
     ;;
   *)
-    echo "Usage: $0 {setup|unit|integration|all}"
+    echo "Usage: $0 {unit|integration|all}"
     echo ""
-    echo "  setup       - Run setup/configuration checks"
     echo "  unit        - Run fast unit tests"
     echo "  integration - Run integration tests (requires external services)"
     echo "  all         - Run all tests"
