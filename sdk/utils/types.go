@@ -16,6 +16,7 @@ type Configuration struct {
 	KeycloakBaseURL  string
 	KeycloakRealm    string
 	KeycloakClientID string
+	KeycloakClientSecret string
 	KeycloakUsername string
 	KeycloakPassword string
 }

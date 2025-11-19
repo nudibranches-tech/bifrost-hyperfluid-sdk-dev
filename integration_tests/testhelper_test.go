@@ -7,26 +7,73 @@ import (
 	"time"
 )
 
-func getTestConfig() (utils.Configuration, error) {
-	orgID := os.Getenv("HYPERFLUID_ORG_ID")
-	token := os.Getenv("HYPERFLUID_TOKEN")
+// getTestConfig loads configuration from environment variables,
+// optionally overriding with values provided in overrideConfig.
+func getTestConfig(overrideConfig *utils.Configuration) (utils.Configuration, error) {
+	// Start with config loaded from environment variables
+	config := loadTestConfigFromEnv()
 
-	config := utils.Configuration{
-		BaseURL:        os.Getenv("HYPERFLUID_BASE_URL"),
-		OrgID:          orgID,
-		Token:          token,
-		RequestTimeout: time.Duration(getEnvInt("HYPERFLUID_REQUEST_TIMEOUT", 30)) * time.Second,
-	}
-
-	if config.Token == "" {
-		config.KeycloakUsername = os.Getenv("KEYCLOAK_USERNAME")
-		config.KeycloakPassword = os.Getenv("KEYCLOAK_PASSWORD")
-		config.KeycloakBaseURL = os.Getenv("KEYCLOAK_BASE_URL")
-		config.KeycloakClientID = os.Getenv("KEYCLOAK_CLIENT_ID")
-		config.KeycloakRealm = os.Getenv("KEYCLOAK_REALM")
+	// Apply overrides
+	if overrideConfig != nil {
+		if overrideConfig.BaseURL != "" {
+			config.BaseURL = overrideConfig.BaseURL
+		}
+		if overrideConfig.OrgID != "" {
+			config.OrgID = overrideConfig.OrgID
+		}
+		if overrideConfig.Token != "" {
+			config.Token = overrideConfig.Token
+		}
+		if overrideConfig.RequestTimeout != 0 {
+			config.RequestTimeout = overrideConfig.RequestTimeout
+		}
+		if overrideConfig.KeycloakUsername != "" {
+			config.KeycloakUsername = overrideConfig.KeycloakUsername
+		}
+		if overrideConfig.KeycloakPassword != "" {
+			config.KeycloakPassword = overrideConfig.KeycloakPassword
+		}
+		if overrideConfig.KeycloakBaseURL != "" {
+			config.KeycloakBaseURL = overrideConfig.KeycloakBaseURL
+		}
+		if overrideConfig.KeycloakClientID != "" {
+			config.KeycloakClientID = overrideConfig.KeycloakClientID
+		}
+		if overrideConfig.KeycloakRealm != "" {
+			config.KeycloakRealm = overrideConfig.KeycloakRealm
+		}
+		if overrideConfig.KeycloakClientSecret != "" {
+			config.KeycloakClientSecret = overrideConfig.KeycloakClientSecret
+		}
+		config.SkipTLSVerify = overrideConfig.SkipTLSVerify // bools must be handled explicitly
+		if overrideConfig.MaxRetries != 0 {
+			config.MaxRetries = overrideConfig.MaxRetries
+		}
 	}
 
 	return config, nil
+}
+
+// loadTestConfigFromEnv loads configuration solely from environment variables.
+func loadTestConfigFromEnv() utils.Configuration {
+	config := utils.Configuration{
+		BaseURL:        getEnv("HYPERFLUID_BASE_URL", ""),
+		OrgID:          getEnv("HYPERFLUID_ORG_ID", ""),
+		Token:          getEnv("HYPERFLUID_TOKEN", ""),
+		RequestTimeout: time.Duration(getEnvInt("HYPERFLUID_REQUEST_TIMEOUT", 30)) * time.Second,
+		SkipTLSVerify:  getEnv("HYPERFLUID_SKIP_TLS_VERIFY", "false") == "true",
+		MaxRetries:     getEnvInt("HYPERFLUID_MAX_RETRIES", 3),
+	}
+
+	// Keycloak config
+	config.KeycloakUsername = getEnv("KEYCLOAK_USERNAME", "")
+	config.KeycloakPassword = getEnv("KEYCLOAK_PASSWORD", "")
+	config.KeycloakBaseURL = getEnv("KEYCLOAK_BASE_URL", "")
+	config.KeycloakClientID = getEnv("KEYCLOAK_CLIENT_ID", "")
+	config.KeycloakRealm = getEnv("KEYCLOAK_REALM", "")
+	config.KeycloakClientSecret = getEnv("KEYCLOAK_CLIENT_SECRET", "")
+
+	return config
 }
 
 func getEnv(key, fallback string) string {
