@@ -19,7 +19,12 @@ func (c *Client) do(ctx context.Context, method, url string, body []byte) (*util
 	for i := 0; i <= c.config.MaxRetries; i++ {
 		if i > 0 {
 			delay := time.Duration(math.Pow(2, float64(i-1))*100) * time.Millisecond
-			time.Sleep(delay)
+			// Respect context cancellation during backoff
+			select {
+			case <-time.After(delay):
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			}
 		}
 
 		req, err := http.NewRequestWithContext(ctx, method, url, bytes.NewBuffer(body))
@@ -41,9 +46,10 @@ func (c *Client) do(ctx context.Context, method, url string, body []byte) (*util
 			lastErr = err
 			continue
 		}
-		defer func() { _ = resp.Body.Close() }()
 
+		// Read body and close immediately (not with defer in loop!)
 		respBody, err := io.ReadAll(resp.Body)
+		_ = resp.Body.Close() // Always close, even if ReadAll fails (error ignored - we already have the body)
 		if err != nil {
 			lastErr = err
 			continue
