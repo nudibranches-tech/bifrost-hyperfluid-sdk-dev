@@ -26,18 +26,18 @@ func TestNewClient(t *testing.T) {
 	}
 }
 
-func TestGetCatalog(t *testing.T) {
-	client := NewClient(utils.Configuration{})
-	catalog := client.GetCatalog("test-catalog")
+func TestCatalogMethod(t *testing.T) {
+	client := NewClient(utils.Configuration{OrgID: "test-org"})
+	qb := client.Catalog("test-catalog")
 
-	if catalog == nil {
-		t.Fatal("GetCatalog should not return nil")
+	if qb == nil {
+		t.Fatal("Catalog should not return nil")
 	}
-	if catalog.Name != "test-catalog" {
-		t.Errorf("Expected catalog name to be 'test-catalog', got '%s'", catalog.Name)
+	if qb.catalogName != "test-catalog" {
+		t.Errorf("Expected catalog name to be 'test-catalog', got '%s'", qb.catalogName)
 	}
-	if catalog.client != client {
-		t.Error("Catalog client should be the same as the parent client")
+	if qb.client != client {
+		t.Error("QueryBuilder client should be the same as the parent client")
 	}
 }
 
@@ -59,16 +59,15 @@ func newTestClient(config utils.Configuration, handler func(req *http.Request) (
 	}
 }
 
-func TestGetData_Success(t *testing.T) {
-	client := newTestClient(utils.Configuration{Token: "test-token"}, func(req *http.Request) (*http.Response, error) {
+func TestFluentAPI_Success(t *testing.T) {
+	client := newTestClient(utils.Configuration{Token: "test-token", OrgID: "test-org"}, func(req *http.Request) (*http.Response, error) {
 		return &http.Response{
 			StatusCode: http.StatusOK,
 			Body:       io.NopCloser(strings.NewReader(`{"data": "test"}`)),
 		}, nil
 	})
 
-	table := client.GetCatalog("c").Table("s", "t")
-	resp, err := table.GetData(context.Background(), nil)
+	resp, err := client.Catalog("c").Schema("s").Table("t").Get(context.Background())
 
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
@@ -81,41 +80,39 @@ func TestGetData_Success(t *testing.T) {
 	}
 }
 
-func TestGetData_NotFound(t *testing.T) {
-	client := newTestClient(utils.Configuration{Token: "test-token"}, func(req *http.Request) (*http.Response, error) {
+func TestFluentAPI_NotFound(t *testing.T) {
+	client := newTestClient(utils.Configuration{Token: "test-token", OrgID: "test-org"}, func(req *http.Request) (*http.Response, error) {
 		return &http.Response{
 			StatusCode: http.StatusNotFound,
 			Body:       io.NopCloser(strings.NewReader("")),
 		}, nil
 	})
 
-	table := client.GetCatalog("c").Table("s", "t")
-	_, err := table.GetData(context.Background(), nil)
+	_, err := client.Catalog("c").Schema("s").Table("t").Get(context.Background())
 
 	if !errors.Is(err, utils.ErrNotFound) {
 		t.Errorf("Expected ErrNotFound, got %v", err)
 	}
 }
 
-func TestGetData_PermissionDenied(t *testing.T) {
-	client := newTestClient(utils.Configuration{Token: "test-token"}, func(req *http.Request) (*http.Response, error) {
+func TestFluentAPI_PermissionDenied(t *testing.T) {
+	client := newTestClient(utils.Configuration{Token: "test-token", OrgID: "test-org"}, func(req *http.Request) (*http.Response, error) {
 		return &http.Response{
 			StatusCode: http.StatusForbidden,
 			Body:       io.NopCloser(strings.NewReader("")),
 		}, nil
 	})
 
-	table := client.GetCatalog("c").Table("s", "t")
-	_, err := table.GetData(context.Background(), nil)
+	_, err := client.Catalog("c").Schema("s").Table("t").Get(context.Background())
 
 	if !errors.Is(err, utils.ErrPermissionDenied) {
 		t.Errorf("Expected ErrPermissionDenied, got %v", err)
 	}
 }
 
-func TestGetData_ServerError_Retry(t *testing.T) {
+func TestFluentAPI_ServerError_Retry(t *testing.T) {
 	reqCount := 0
-	client := newTestClient(utils.Configuration{Token: "test-token", MaxRetries: 1}, func(req *http.Request) (*http.Response, error) {
+	client := newTestClient(utils.Configuration{Token: "test-token", OrgID: "test-org", MaxRetries: 1}, func(req *http.Request) (*http.Response, error) {
 		reqCount++
 		if reqCount == 1 {
 			return &http.Response{
@@ -129,8 +126,7 @@ func TestGetData_ServerError_Retry(t *testing.T) {
 		}, nil
 	})
 
-	table := client.GetCatalog("c").Table("s", "t")
-	resp, err := table.GetData(context.Background(), nil)
+	resp, err := client.Catalog("c").Schema("s").Table("t").Get(context.Background())
 
 	if err != nil {
 		t.Fatalf("Expected no error on retry, got %v", err)

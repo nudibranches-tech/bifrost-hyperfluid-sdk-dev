@@ -24,17 +24,6 @@ func NewClient(config utils.Configuration) *Client {
 	}
 }
 
-// GetCatalog retrieves a catalog by name.
-// This is the legacy API - consider using the fluent API instead:
-//
-//	client.Catalog("name").Schema("schema").Table("table").Get(ctx)
-func (c *Client) GetCatalog(name string) *Catalog {
-	return &Catalog{
-		Name:   name,
-		client: c,
-	}
-}
-
 // Query creates a new QueryBuilder for fluent query construction.
 // Example:
 //

@@ -11,8 +11,6 @@ go get bifrost-for-developers/sdk
 
 ## Usage
 
-### ✨ New Fluent API (Recommended)
-
 The fluent API provides an intuitive, chainable interface for building queries:
 
 ```go
@@ -82,42 +80,23 @@ resp, err := client.
     Table("table").
     RawParams(url.Values{"custom_param": {"value"}}).
     Get(ctx)
-```
 
-### 📚 Legacy API (Still Supported)
+// Building queries step by step
+query := client.
+    Catalog("sales").
+    Schema("public").
+    Table("orders")
 
-The original API remains available for backward compatibility:
-
-```go
-import (
-    "fmt"
-    "net/url"
-    "bifrost-for-developers/sdk"
-    "bifrost-for-developers/sdk/utils"
-)
-
-func main() {
-    config := utils.Configuration{
-        BaseURL: "https://bifrost.hyperfluid.cloud",
-        OrgID:   "your-org-id",
-        Token:   "your-token",
-    }
-
-    client := sdk.NewClient(config)
-    catalog := client.GetCatalog("my_catalog")
-    table := catalog.Table("my_schema", "my_table")
-
-    params := url.Values{}
-    params.Add("_limit", "10")
-    params.Add("select", "col1,col2")
-
-    response, err := table.GetData(context.Background(), params)
-    if err != nil {
-        // Handle error
-    }
-
-    fmt.Println(response.Data)
+// Add filters dynamically
+if status != "" {
+    query = query.Where("status", "=", status)
 }
+
+// Add pagination
+query = query.Limit(pageSize).Offset(page * pageSize)
+
+// Execute
+resp, err := query.Get(ctx)
 ```
 
 ## Configuration
@@ -143,9 +122,11 @@ func main() {
 
 ```
 sdk/
-  client.go     # Client object and public API
-  domain.go     # Domain objects (Catalog, Table)
-  utils/        # Utility functions and types
+  client.go        # Client object and entry points
+  query_builder.go # Fluent API implementation
+  request.go       # HTTP request handling
+  auth.go          # Authentication (Keycloak support)
+  utils/           # Utility functions and types
 ```
 
 ## Fluent API Methods
@@ -178,7 +159,6 @@ sdk/
 ## Error Handling
 
 ```go
-// Fluent API
 resp, err := client.
     Catalog("catalog").
     Schema("schema").
@@ -186,12 +166,19 @@ resp, err := client.
     Get(ctx)
 
 if err != nil {
-    // Handle request error (e.g., network error, authentication error)
-    log.Fatalf("Request failed: %v", err)
+    // Check for specific error types
+    if errors.Is(err, utils.ErrNotFound) {
+        log.Println("Resource not found")
+    } else if errors.Is(err, utils.ErrPermissionDenied) {
+        log.Println("Permission denied")
+    } else if errors.Is(err, utils.ErrAuthenticationFailed) {
+        log.Println("Authentication failed")
+    } else {
+        log.Fatalf("Request failed: %v", err)
+    }
 }
 
 if resp.Status != utils.StatusOK {
-    // Handle API error (e.g., table not found)
     log.Printf("API error: %s", resp.Error)
 }
 ```

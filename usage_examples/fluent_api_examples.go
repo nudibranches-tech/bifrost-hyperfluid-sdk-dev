@@ -2,8 +2,11 @@ package main
 
 import (
 	"bifrost-for-developers/sdk"
+	"bifrost-for-developers/sdk/utils"
 	"context"
 	"fmt"
+	"os"
+	"time"
 )
 
 // This file demonstrates the new fluent API for the Bifrost SDK.
@@ -216,55 +219,52 @@ func runFluentAPIMultipleChainsExample() {
 	fmt.Println()
 }
 
-func runFluentAPIComparisonExample() {
-	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-	fmt.Println("🎯 Fluent API Example 6: Old vs New API Comparison")
-	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+// Helper functions
 
-	config := getConfig()
-	client := sdk.NewClient(config)
-
-	testCatalog := getEnv("BIFROST_TEST_CATALOG", "")
-	testSchema := getEnv("BIFROST_TEST_SCHEMA", "")
-	testTable := getEnv("BIFROST_TEST_TABLE", "")
-
-	if testCatalog == "" || testSchema == "" || testTable == "" {
-		fmt.Println("⚠️  Skipping: Test environment variables not set")
-		fmt.Println()
+func handleResponse(resp *utils.Response, err error) {
+	if err != nil {
+		fmt.Printf("❌ Error: %s\n", err.Error())
 		return
 	}
-
-	fmt.Println("📝 OLD API (still supported):")
-	fmt.Println("   catalog := client.GetCatalog(\"catalog\")")
-	fmt.Println("   table := catalog.Table(\"schema\", \"table\")")
-	fmt.Println("   params := url.Values{}")
-	fmt.Println("   params.Add(\"_limit\", \"10\")")
-	fmt.Println("   resp, err := table.GetData(ctx, params)")
-	fmt.Println()
-
-	fmt.Println("📝 NEW FLUENT API (recommended):")
-	fmt.Println("   resp, err := client.")
-	fmt.Println("       Catalog(\"catalog\").")
-	fmt.Println("       Schema(\"schema\").")
-	fmt.Println("       Table(\"table\").")
-	fmt.Println("       Limit(10).")
-	fmt.Println("       Get(ctx)")
-	fmt.Println()
-
-	fmt.Println("🚀 Running new fluent API...")
-
-	resp, err := client.
-		Catalog(testCatalog).
-		Schema(testSchema).
-		Table(testTable).
-		Limit(10).
-		Get(context.Background())
-
-	handleResponse(resp, err)
-	fmt.Println()
+	if resp.Status != utils.StatusOK {
+		fmt.Printf("❌ Error: %s\n", resp.Error)
+		return
+	}
+	fmt.Println("✅ Success!")
+	if dataSlice, isSlice := resp.Data.([]interface{}); isSlice {
+		fmt.Printf("📦 %d records", len(dataSlice))
+		if len(dataSlice) > 0 {
+			fmt.Printf(" | First: %v", dataSlice[0])
+		}
+		fmt.Println()
+	} else if dataMap, isMap := resp.Data.(map[string]interface{}); isMap {
+		fmt.Printf("📦 Data: %v\n", dataMap)
+	}
 }
 
-// Helper functions
+func getConfig() utils.Configuration {
+	return utils.Configuration{
+		BaseURL:        getEnv("HYPERFLUID_BASE_URL", ""),
+		OrgID:          getEnv("HYPERFLUID_ORG_ID", ""),
+		Token:          getEnv("HYPERFLUID_TOKEN", ""),
+		RequestTimeout: 30 * time.Second,
+		MaxRetries:     3,
+
+		KeycloakBaseURL:      getEnv("KEYCLOAK_BASE_URL", ""),
+		KeycloakRealm:        getEnv("KEYCLOAK_REALM", ""),
+		KeycloakClientID:     getEnv("KEYCLOAK_CLIENT_ID", ""),
+		KeycloakClientSecret: getEnv("KEYCLOAK_CLIENT_SECRET", ""),
+		KeycloakUsername:     getEnv("KEYCLOAK_USERNAME", ""),
+		KeycloakPassword:     getEnv("KEYCLOAK_PASSWORD", ""),
+	}
+}
+
+func getEnv(key, fallback string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	return fallback
+}
 
 func splitColumns(cols string) []string {
 	if cols == "" {
