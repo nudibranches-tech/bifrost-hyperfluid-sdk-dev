@@ -4,7 +4,6 @@ import (
 	"bifrost-for-developers/sdk"
 	"bifrost-for-developers/sdk/utils"
 	"context"
-	"net/url"
 	"os"
 	"testing"
 )
@@ -28,12 +27,13 @@ func TestIntegration_GetData(t *testing.T) {
 	}
 
 	client := sdk.NewClient(config)
-	table := client.GetCatalog(testCatalog).Table(testSchema, testTable)
 
-	params := url.Values{}
-	params.Add("_limit", "1")
-
-	resp, err := table.GetData(context.Background(), params)
+	resp, err := client.
+		Catalog(testCatalog).
+		Schema(testSchema).
+		Table(testTable).
+		Limit(1).
+		Get(context.Background())
 	if err != nil {
 		t.Fatalf("GetData failed: %v", err)
 	}
@@ -87,12 +87,13 @@ func TestIntegration_GetDataWithParameters(t *testing.T) {
 	}
 
 	client := sdk.NewClient(config)
-	table := client.GetCatalog(testCatalog).Table(testSchema, testTable)
 
-	params := url.Values{}
-	params.Add("_limit", "1")
-
-	resp, err := table.GetData(context.Background(), params)
+	resp, err := client.
+		Catalog(testCatalog).
+		Schema(testSchema).
+		Table(testTable).
+		Limit(1).
+		Get(context.Background())
 	if err != nil {
 		t.Fatalf("GetData with parameters failed: %v", err)
 	}

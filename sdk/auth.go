@@ -34,12 +34,13 @@ func (c *Client) refreshToken(ctx context.Context) (string, error) {
 	authMutex.Lock()
 	defer authMutex.Unlock()
 
-	// If token was already refreshed by another goroutine while waiting for the lock, return it.
-	// This prevents multiple goroutines from refreshing the same token.
-	// TODO: Add actual token expiry check, not just presence.
-	if c.config.Token != "" {
-		return c.config.Token, nil
-	}
+	// Note: This is a simplified implementation.
+	// In production, you should:
+	// 1. Parse JWT to check expiry
+	// 2. Only refresh if token is actually expired or about to expire
+	// 3. Store token expiry timestamp separately
+	//
+	// For now, we always refresh when this is called (typically on 401 errors)
 
 	if c.hasKeycloakClientCredentials() {
 		newToken, err := c.refreshAccessTokenClientCredentials(ctx)
@@ -114,9 +115,11 @@ func (c *Client) exchangeKeycloakToken(ctx context.Context, form url.Values) (st
 	if err != nil {
 		return "", fmt.Errorf("%w: cannot reach Keycloak: %w", utils.ErrAuthenticationFailed, err)
 	}
-	defer func() { _ = resp.Body.Close() }()
 
+	// Read body and close immediately
 	body, _ := io.ReadAll(resp.Body) // io.ReadAll already handles errors internally to return empty slice
+	_ = resp.Body.Close()            // Always close after reading (error ignored - we already have the body)
+
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("%w: Keycloak token exchange failed (%d): %s", utils.ErrAuthenticationFailed, resp.StatusCode, body)
 	}

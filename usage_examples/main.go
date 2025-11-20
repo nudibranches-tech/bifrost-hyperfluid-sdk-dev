@@ -9,7 +9,7 @@ import (
 
 func main() {
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-	fmt.Println("🚀 Bifrost SDK - Examples Demo")
+	fmt.Println("🚀 Bifrost SDK - Fluent API Demo")
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 	fmt.Println()
 
@@ -17,12 +17,33 @@ func main() {
 		log.Printf("⚠️  Warning: .env not loaded: %v\n", err)
 	}
 
-	fmt.Println("Running all examples...")
+	fmt.Println("Running fluent API examples...")
 	fmt.Println()
 
-	runPostgresExample()
-	runGraphQLExample()
-	runOpenAPIExample()
+	// Old fluent API examples (backward compatibility)
+	fmt.Println("══════════════════════════════════════════════")
+	fmt.Println("📚 SIMPLE FLUENT API (Catalog-first)")
+	fmt.Println("══════════════════════════════════════════════")
+	fmt.Println()
+
+	runFluentAPISimpleExample()
+	runFluentAPIWithSelectExample()
+	runFluentAPIComplexExample()
+
+	// NEW! Progressive fluent API examples
+	fmt.Println()
+	fmt.Println("══════════════════════════════════════════════")
+	fmt.Println("✨ PROGRESSIVE FLUENT API (Type-safe)")
+	fmt.Println("══════════════════════════════════════════════")
+	fmt.Println()
+
+	runProgressiveAPIExample1()
+	runProgressiveAPIExample2()
+	runProgressiveAPIExample3()
+	runProgressiveAPIExample4()
+	runProgressiveAPIExample5()
+	runProgressiveAPIExample6()
+	runProgressiveAPIListingExample()
 
 	fmt.Println()
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
