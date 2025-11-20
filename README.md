@@ -1,6 +1,8 @@
 # Bifrost SDK
 
-Go SDK for Hyperfluid data access with a modern, fluent API.
+Go SDK for Hyperfluid data access with **two fluent APIs**:
+1. **Progressive API** (Type-safe, resource management) - **NEW!** ✨
+2. **Catalog-First API** (Simple queries)
 
 ## Quick Start
 
@@ -9,9 +11,38 @@ Go SDK for Hyperfluid data access with a modern, fluent API.
 go get bifrost-for-developers/sdk
 ```
 
-## Usage
+## Two APIs, Choose Your Style
 
-The fluent API provides an intuitive, chainable interface for building queries:
+### 🚀 Progressive API (Type-Safe Navigation)
+
+Navigate the resource hierarchy with **type safety** and **contextual operations**:
+
+```go
+// Full path: Org → Harbor → DataDock → Catalog → Schema → Table
+resp, err := client.
+    Org(orgID).                    // OrgBuilder - can ListHarbors(), CreateHarbor()
+    Harbor(harborID).              // HarborBuilder - can ListDataDocks()
+    DataDock(dataDockID).          // DataDockBuilder - can WakeUp(), Sleep(), RefreshCatalog()
+    Catalog(catalogName).          // CatalogBuilder - can ListSchemas()
+    Schema(schemaName).            // SchemaBuilder - can ListTables()
+    Table(tableName).              // TableQueryBuilder - can query
+    Limit(10).
+    Get(ctx)
+```
+
+**Benefits:**
+- ✅ Type-safe: Each level is a different type
+- ✅ IDE autocomplete shows only valid methods
+- ✅ Resource management (WakeUp, Sleep, RefreshCatalog)
+- ✅ Listing at each level (ListHarbors, ListSchemas, etc.)
+
+**See:** [PROGRESSIVE_API.md](PROGRESSIVE_API.md) for complete documentation
+
+---
+
+### 📦 Catalog-First API (Simple Queries)
+
+Jump directly to tables when you just need data:
 
 ```go
 import (
@@ -48,6 +79,70 @@ func main() {
     fmt.Println(resp.Data)
 }
 ```
+
+**Benefits:**
+- ✅ Simple and concise
+- ✅ Perfect for data queries
+- ✅ No need for intermediate IDs
+
+---
+
+## Progressive API Examples
+
+### Resource Management
+
+```go
+// List resources at each level
+harbors, err := client.Org(orgID).ListHarbors(ctx)
+datadocks, err := client.Org(orgID).Harbor(harborID).ListDataDocks(ctx)
+schemas, err := datadock.Catalog("postgres").ListSchemas(ctx)
+tables, err := schema.ListTables(ctx)
+
+// Create resources
+client.Org(orgID).CreateHarbor(ctx, "my-harbor")
+harbor.CreateDataDock(ctx, datadockConfig)
+
+// DataDock lifecycle
+datadock := client.Org(orgID).Harbor(harborID).DataDock(dataDockID)
+datadock.RefreshCatalog(ctx)  // Update metadata
+datadock.WakeUp(ctx)          // Bring online
+datadock.Sleep(ctx)           // Save costs
+datadock.Update(ctx, config)  // Update config
+```
+
+### Queries with Full Path
+
+```go
+// Simple query
+resp, err := client.
+    Org(orgID).
+    Harbor(harborID).
+    DataDock(dataDockID).
+    Catalog("postgres").
+    Schema("public").
+    Table("users").
+    Limit(10).
+    Get(ctx)
+
+// Complex query with filters
+resp, err := client.
+    Org(orgID).
+    Harbor(harborID).
+    DataDock(dataDockID).
+    Catalog("sales").
+    Schema("public").
+    Table("orders").
+    Select("id", "customer", "total").
+    Where("status", "=", "completed").
+    Where("total", ">", 1000).
+    OrderBy("created_at", "DESC").
+    Limit(100).
+    Get(ctx)
+```
+
+---
+
+## Catalog-First API Examples
 
 ### Advanced Queries
 

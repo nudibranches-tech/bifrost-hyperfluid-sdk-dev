@@ -20,11 +20,30 @@ func main() {
 	fmt.Println("Running fluent API examples...")
 	fmt.Println()
 
+	// Old fluent API examples (backward compatibility)
+	fmt.Println("══════════════════════════════════════════════")
+	fmt.Println("📚 SIMPLE FLUENT API (Catalog-first)")
+	fmt.Println("══════════════════════════════════════════════")
+	fmt.Println()
+
 	runFluentAPISimpleExample()
 	runFluentAPIWithSelectExample()
 	runFluentAPIComplexExample()
-	runFluentAPICustomOrgExample()
-	runFluentAPIMultipleChainsExample()
+
+	// NEW! Progressive fluent API examples
+	fmt.Println()
+	fmt.Println("══════════════════════════════════════════════")
+	fmt.Println("✨ PROGRESSIVE FLUENT API (Type-safe)")
+	fmt.Println("══════════════════════════════════════════════")
+	fmt.Println()
+
+	runProgressiveAPIExample1()
+	runProgressiveAPIExample2()
+	runProgressiveAPIExample3()
+	runProgressiveAPIExample4()
+	runProgressiveAPIExample5()
+	runProgressiveAPIExample6()
+	runProgressiveAPIListingExample()
 
 	fmt.Println()
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━")

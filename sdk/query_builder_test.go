@@ -200,33 +200,8 @@ func TestQueryBuilder_WithPagination(t *testing.T) {
 	}
 }
 
-func TestQueryBuilder_CustomOrg(t *testing.T) {
-	client := newTestClient(utils.Configuration{
-		Token: "test-token",
-		OrgID: "default-org",
-	}, func(req *http.Request) (*http.Response, error) {
-		// Should use custom org, not default
-		if !strings.Contains(req.URL.Path, "/custom-org/") {
-			t.Errorf("Expected path to contain custom-org, got %s", req.URL.Path)
-		}
-
-		return &http.Response{
-			StatusCode: http.StatusOK,
-			Body:       io.NopCloser(strings.NewReader(`[]`)),
-		}, nil
-	})
-
-	_, err := client.
-		Org("custom-org").
-		Catalog("cat").
-		Schema("schema").
-		Table("users").
-		Get(context.Background())
-
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-}
+// Note: Custom org test removed - now use Progressive API with client.Org(customID)
+// The Org() method now returns OrgBuilder, not QueryBuilder
 
 func TestQueryBuilder_ValidationErrors(t *testing.T) {
 	client := newTestClient(utils.Configuration{

@@ -43,8 +43,30 @@ func (c *Client) Catalog(name string) *QueryBuilder {
 	return newQueryBuilder(c).Catalog(name)
 }
 
-// Org starts a new fluent query with a specific organization ID.
-// This overrides the default OrgID from the client configuration.
-func (c *Client) Org(orgID string) *QueryBuilder {
-	return newQueryBuilder(c).Org(orgID)
+// Org starts a new fluent API navigation with a specific organization.
+// This uses the progressive builder pattern for type-safe navigation:
+//
+//	client.Org(id).Harbor(id).DataDock(id).Catalog(name).Schema(name).Table(name)
+//
+// Each level provides contextual methods:
+//   - Org: ListHarbors(), CreateHarbor(), ListDataDocks()
+//   - Harbor: ListDataDocks(), CreateDataDock(), Delete()
+//   - DataDock: GetCatalog(), RefreshCatalog(), WakeUp(), Sleep()
+//   - Catalog: Schema(), ListSchemas()
+//   - Schema: Table(), ListTables()
+//   - Table: Select(), Where(), Limit(), Get()
+func (c *Client) Org(orgID string) *OrgBuilder {
+	return &OrgBuilder{
+		client: c,
+		orgID:  orgID,
+	}
+}
+
+// OrgFromConfig creates an OrgBuilder using the OrgID from the client configuration.
+// This is a convenience method when you always use the same organization.
+func (c *Client) OrgFromConfig() *OrgBuilder {
+	return &OrgBuilder{
+		client: c,
+		orgID:  c.config.OrgID,
+	}
 }
