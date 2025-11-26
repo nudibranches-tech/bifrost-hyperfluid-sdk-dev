@@ -65,3 +65,24 @@ func (response *Response) GetDataAsMap() (map[string]any, bool) {
 	mapValue, isMap := response.Data.(map[string]any)
 	return mapValue, isMap
 }
+
+// UnmarshalData converts response data (interface{}) into a typed struct.
+// This is useful for converting the generic Response.Data into specific types.
+func UnmarshalData(data any, target any) error {
+	if data == nil {
+		return fmt.Errorf("data is nil")
+	}
+
+	// Marshal the data back to JSON
+	jsonBytes, err := json.Marshal(data)
+	if err != nil {
+		return fmt.Errorf("failed to marshal data: %w", err)
+	}
+
+	// Unmarshal into the target type
+	if err := json.Unmarshal(jsonBytes, target); err != nil {
+		return fmt.Errorf("failed to unmarshal into target type: %w", err)
+	}
+
+	return nil
+}
