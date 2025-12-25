@@ -2,6 +2,7 @@ package sdk
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/nudibranches-tech/bifrost-hyperfluid-sdk-dev/sdk/builders/fluent"
@@ -15,7 +16,7 @@ type Client struct {
 	httpClient *http.Client
 }
 
-// NewClient creates a new Bifrost client.
+// NewClient creates a new Bifrost client with the provided configuration.
 func NewClient(config utils.Configuration) *Client {
 	// Create a copy of the configuration to avoid side effects
 	cfg := config
@@ -26,6 +27,80 @@ func NewClient(config utils.Configuration) *Client {
 			cfg.RequestTimeout,
 		),
 	}
+}
+
+// NewClientFromServiceAccount creates a new Bifrost client using a ServiceAccount.
+// This is the recommended way to create a client for service-to-service authentication.
+//
+// Example:
+//
+//	// Load service account from file (e.g., Kubernetes mounted secret)
+//	sa, err := sdk.LoadServiceAccount("/var/run/secrets/hyperfluid/service_account.json")
+//	if err != nil {
+//	    log.Fatalf("Failed to load service account: %v", err)
+//	}
+//
+//	// Create client
+//	client, err := sdk.NewClientFromServiceAccount(sa, sdk.ServiceAccountOptions{
+//	    BaseURL: "https://api.hyperfluid.cloud",
+//	    OrgID:   "my-org-id",
+//	})
+//	if err != nil {
+//	    log.Fatalf("Failed to create client: %v", err)
+//	}
+func NewClientFromServiceAccount(sa *ServiceAccount, opts ServiceAccountOptions) (*Client, error) {
+	if sa == nil {
+		return nil, fmt.Errorf("service account is nil")
+	}
+
+	if opts.BaseURL == "" {
+		return nil, fmt.Errorf("BaseURL is required in ServiceAccountOptions")
+	}
+
+	cfg, err := sa.ToConfiguration(opts)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create configuration from service account: %w", err)
+	}
+
+	return NewClient(cfg), nil
+}
+
+// NewClientFromServiceAccountFile creates a new Bifrost client by loading a ServiceAccount
+// from a JSON file. This is a convenience function that combines LoadServiceAccount and
+// NewClientFromServiceAccount.
+//
+// This is ideal for Kubernetes deployments where secrets are mounted as files:
+//
+//	client, err := sdk.NewClientFromServiceAccountFile(
+//	    "/var/run/secrets/hyperfluid/service_account.json",
+//	    sdk.ServiceAccountOptions{
+//	        BaseURL: "https://api.hyperfluid.cloud",
+//	    },
+//	)
+func NewClientFromServiceAccountFile(path string, opts ServiceAccountOptions) (*Client, error) {
+	sa, err := LoadServiceAccount(path)
+	if err != nil {
+		return nil, err
+	}
+	return NewClientFromServiceAccount(sa, opts)
+}
+
+// NewClientFromServiceAccountJSON creates a new Bifrost client by parsing a ServiceAccount
+// from a JSON string. This is useful when the service account is provided via environment
+// variables.
+//
+// Example:
+//
+//	saJSON := os.Getenv("HYPERFLUID_SERVICE_ACCOUNT")
+//	client, err := sdk.NewClientFromServiceAccountJSON(saJSON, sdk.ServiceAccountOptions{
+//	    BaseURL: os.Getenv("HYPERFLUID_API_URL"),
+//	})
+func NewClientFromServiceAccountJSON(jsonStr string, opts ServiceAccountOptions) (*Client, error) {
+	sa, err := LoadServiceAccountFromJSON(jsonStr)
+	if err != nil {
+		return nil, err
+	}
+	return NewClientFromServiceAccount(sa, opts)
 }
 
 // Do executes an HTTP request (implements the interface needed by builders)
