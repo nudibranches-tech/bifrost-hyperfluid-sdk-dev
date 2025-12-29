@@ -148,6 +148,14 @@ func parseKeycloakURL(rawURL string) (baseURL, realm string, err error) {
 		return "", "", fmt.Errorf("failed to parse URL: %w", err)
 	}
 
+	// Validate scheme is present and valid
+	if parsed.Scheme == "" {
+		return "", "", fmt.Errorf("URL missing scheme (http/https): %s", rawURL)
+	}
+	if parsed.Scheme != "http" && parsed.Scheme != "https" {
+		return "", "", fmt.Errorf("URL has invalid scheme %q, expected http or https: %s", parsed.Scheme, rawURL)
+	}
+
 	// Path format: /realms/<realm> or /realms/<realm>/protocol/...
 	parts := strings.Split(strings.Trim(parsed.Path, "/"), "/")
 	if len(parts) < 2 || parts[0] != "realms" {

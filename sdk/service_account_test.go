@@ -152,6 +152,37 @@ func TestServiceAccount_ParseIssuer(t *testing.T) {
 			wantErr:     true,
 			errContains: "issuer is empty and no token_uri available",
 		},
+		{
+			name:        "missing scheme - protocol relative URL",
+			issuer:      "//auth.hyperfluid.cloud/realms/my-org",
+			wantErr:     true,
+			errContains: "URL missing scheme (http/https)",
+		},
+		{
+			name:        "missing scheme - no slashes",
+			issuer:      "auth.hyperfluid.cloud/realms/my-org",
+			wantErr:     true,
+			errContains: "URL missing scheme (http/https)",
+		},
+		{
+			name:        "invalid scheme - ftp",
+			issuer:      "ftp://auth.hyperfluid.cloud/realms/my-org",
+			wantErr:     true,
+			errContains: "URL has invalid scheme \"ftp\"",
+		},
+		{
+			name:        "invalid scheme - file",
+			issuer:      "file:///etc/passwd/realms/my-org",
+			wantErr:     true,
+			errContains: "URL has invalid scheme \"file\"",
+		},
+		{
+			name:        "http scheme is valid",
+			issuer:      "http://localhost:8080/realms/dev",
+			wantBaseURL: "http://localhost:8080",
+			wantRealm:   "dev",
+			wantErr:     false,
+		},
 	}
 
 	for _, tt := range tests {
