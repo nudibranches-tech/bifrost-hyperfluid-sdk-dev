@@ -13,11 +13,12 @@ import (
 
 func TestQueryBuilder_BasicChaining(t *testing.T) {
 	qb := newTestQueryBuilder(utils.Configuration{
-		Token: "test-token",
-		OrgID: "default-org",
+		Token:      "test-token",
+		OrgID:      "default-org",
+		DataDockID: "test-datadock",
 	}, func(req *http.Request) (*http.Response, error) {
 		// Verify the URL was constructed correctly
-		expectedPath := "/default-org/openapi/test-catalog/test-schema/test-table"
+		expectedPath := "/test-datadock/openapi/test-catalog/test-schema/test-table"
 		if !strings.Contains(req.URL.Path, expectedPath) {
 			t.Errorf("Expected path to contain '%s', got '%s'", expectedPath, req.URL.Path)
 		}
