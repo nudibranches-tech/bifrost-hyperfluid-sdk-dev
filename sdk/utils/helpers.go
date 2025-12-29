@@ -10,6 +10,20 @@ import (
 	"time"
 )
 
+// Default configuration values
+const (
+	// DefaultRequestTimeout is the default HTTP request timeout (30 seconds).
+	DefaultRequestTimeout = 30 * time.Second
+
+	// DefaultMaxRetries is the default number of retry attempts for failed requests.
+	DefaultMaxRetries = 3
+)
+
+// SecondsToDuration converts an integer number of seconds to time.Duration.
+func SecondsToDuration(seconds int) time.Duration {
+	return time.Duration(seconds) * time.Second
+}
+
 // Environment variables handling
 func GetEnvironmentVariable(key string, fallback string) string {
 	value := os.Getenv(key)

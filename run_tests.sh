@@ -7,7 +7,7 @@ set -e
 case "$1" in
   unit)
     echo "🧪 Running unit tests..."
-    go test -v ./sdk
+    go test -v ./sdk/...
     ;;
   integration)
     echo "🔗 Running integration tests..."
@@ -17,7 +17,7 @@ case "$1" in
     echo "🚀 Running all tests..."
     echo ""
     echo "1️⃣ Unit tests..."
-    go test -v ./sdk
+    go test -v ./sdk/...
     echo ""
     echo "2️⃣ Integration tests..."
     go test -v ./integration_tests
