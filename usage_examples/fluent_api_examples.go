@@ -256,7 +256,12 @@ func runS3Example() {
 		}
 	}()
 
-	fmt.Printf("📄 File size: %d bytes\n", obj.Size)
+	if obj.Size != nil {
+		fmt.Printf("📄 File size: %d bytes\n", *obj.Size)
+	} else {
+		fmt.Printf("📄 File size: unknown\n")
+	}
+
 	fmt.Printf("📄 Content type: %s\n", obj.ContentType)
 	if obj.LastModified != nil {
 		fmt.Printf("📄 Last modified: %s\n", obj.LastModified.Format(time.RFC3339))
