@@ -357,17 +357,26 @@ func (s *S3Builder) Get(ctx context.Context) (*S3Object, error) {
 	return obj, nil
 }
 
-// List lists objects in the bucket with optional prefix
-func (s *S3Builder) List(ctx context.Context, prefix string) (*utils.Response, error) {
+// validateList checks validation errors and runs STS if needed (no key required)
+func (s *S3Builder) validateList(ctx context.Context) error {
+	if len(s.errors) > 0 {
+		return fmt.Errorf("validation failed: %s", s.errors[0].Error())
+	}
 	if s.bucket == "" {
-		return nil, fmt.Errorf("%w: bucket name is required", utils.ErrInvalidRequest)
+		return fmt.Errorf("%w: bucket required", utils.ErrInvalidRequest)
 	}
 
-	// Run STS if needed
 	if s.stsMethod == "oidc" {
-		if err := s.assumeRoleWithWebIdentity(ctx); err != nil {
-			return nil, err
-		}
+		return s.assumeRoleWithWebIdentity(ctx)
+	}
+
+	return nil
+}
+
+// List lists objects in the bucket with optional prefix
+func (s *S3Builder) List(ctx context.Context, prefix string) (*utils.Response, error) {
+	if err := s.validateList(ctx); err != nil {
+		return nil, err
 	}
 
 	input := &s3.ListObjectsV2Input{
@@ -388,10 +397,16 @@ func (s *S3Builder) List(ctx context.Context, prefix string) (*utils.Response, e
 
 	objects := make([]map[string]interface{}, 0, len(result.Contents))
 	for _, obj := range result.Contents {
+		var lastModified *string
+		if obj.LastModified != nil {
+			s := obj.LastModified.Format(time.RFC3339)
+			lastModified = &s
+		}
+
 		objects = append(objects, map[string]interface{}{
 			"key":           aws.ToString(obj.Key),
 			"size":          obj.Size,
-			"last_modified": obj.LastModified.String(),
+			"last_modified": lastModified, // nil-safe
 		})
 	}
 
