@@ -21,15 +21,20 @@ type S3Builder struct {
 	client interface {
 		GetConfig() utils.Configuration
 	}
-	errors      []error
-	bucket      string
-	key         string
-	s3Client    *s3.Client
-	stsClient   *sts.Client
-	idToken     string // OIDC JWT token
+
+	errors []error
+
+	bucket    string
+	key       string
+	s3Client  *s3.Client
+	stsClient *sts.Client
+
+	idToken     string
 	sessionName string
 	roleArn     string
-	stsMethod   string // "oidc" or empty for static credentials
+
+	stsMethod   string // "oidc" or ""
+	oidcEnabled bool
 }
 
 // NewS3Builder creates a new S3Builder instance configured for MinIO
@@ -88,9 +93,10 @@ func newS3BuilderWithStaticCreds(client interface {
 	})
 
 	return &S3Builder{
-		client:   client,
-		s3Client: s3Client,
-		errors:   []error{},
+		client:      client,
+		s3Client:    s3Client,
+		errors:      []error{},
+		oidcEnabled: false,
 	}, nil
 }
 
@@ -133,10 +139,11 @@ func newS3BuilderWithOIDC(client interface {
 	})
 
 	return &S3Builder{
-		client:    client,
-		s3Client:  s3Client,
-		stsClient: stsClient,
-		errors:    []error{},
+		client:      client,
+		s3Client:    s3Client,
+		stsClient:   stsClient,
+		errors:      []error{},
+		oidcEnabled: true,
 	}, nil
 }
 
@@ -147,9 +154,18 @@ func isHTTPS(endpoint string) bool {
 
 // OIDC sets OIDC JWT token for AssumeRoleWithWebIdentity
 func (s *S3Builder) OIDC(idToken string) *S3Builder {
+	if !s.oidcEnabled {
+		s.errors = append(
+			s.errors,
+			fmt.Errorf("OIDC cannot be used with static credentials; enable MINIO_USE_OIDC=true"),
+		)
+		return s
+	}
+
 	if idToken == "" {
 		s.errors = append(s.errors, fmt.Errorf("OIDC token cannot be empty"))
 	}
+
 	s.idToken = idToken
 	s.stsMethod = "oidc"
 	return s
