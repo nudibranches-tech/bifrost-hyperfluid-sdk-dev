@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"time"
 
@@ -124,18 +125,23 @@ func newS3BuilderWithOIDC(client interface {
 		return nil, fmt.Errorf("failed to load base config: %w", err)
 	}
 
+	isHttps, err := isHTTPS(minioEndpoint)
+	if err != nil {
+		return nil, fmt.Errorf("MinIO endpoint incorecctly formatted")
+	}
+
 	// Create STS client pointing to MinIO's STS endpoint
 	stsClient := sts.NewFromConfig(awsCfg, func(o *sts.Options) {
 		// MinIO STS endpoint is typically at the base endpoint
 		o.BaseEndpoint = aws.String(minioEndpoint)
-		o.EndpointOptions.DisableHTTPS = !isHTTPS(minioEndpoint)
+		o.EndpointOptions.DisableHTTPS = !isHttps
 	})
 
 	// Create S3 client (will be updated after STS)
 	s3Client := s3.NewFromConfig(awsCfg, func(o *s3.Options) {
 		o.BaseEndpoint = aws.String(minioEndpoint)
 		o.UsePathStyle = true
-		o.EndpointOptions.DisableHTTPS = !isHTTPS(minioEndpoint)
+		o.EndpointOptions.DisableHTTPS = !isHttps
 	})
 
 	return &S3Builder{
@@ -148,8 +154,12 @@ func newS3BuilderWithOIDC(client interface {
 }
 
 // isHTTPS checks if endpoint uses HTTPS
-func isHTTPS(endpoint string) bool {
-	return len(endpoint) >= 5 && endpoint[:5] == "https"
+func isHTTPS(endpoint string) (bool, error) {
+	URL, err := url.Parse(endpoint)
+	if err != nil {
+		return false, err
+	}
+	return URL.Scheme == "https", nil
 }
 
 // OIDC sets OIDC JWT token for AssumeRoleWithWebIdentity
@@ -255,10 +265,15 @@ func (s *S3Builder) assumeRoleWithWebIdentity(ctx context.Context) error {
 		return fmt.Errorf("failed to create config with STS credentials: %w", err)
 	}
 
+	isHttps, err := isHTTPS(minioEndpoint)
+	if err != nil {
+		return fmt.Errorf("MinIO endpoint incorecctly formatted")
+	}
+
 	// Recreate S3 client with STS credentials
 	s.s3Client = s3.NewFromConfig(awsCfg, func(o *s3.Options) {
 		o.UsePathStyle = true
-		o.EndpointOptions.DisableHTTPS = !isHTTPS(minioEndpoint)
+		o.EndpointOptions.DisableHTTPS = !isHttps
 	})
 
 	return nil
