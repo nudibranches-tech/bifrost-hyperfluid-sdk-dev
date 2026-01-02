@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"time"
 
@@ -13,46 +14,74 @@ import (
 // This file demonstrates the new fluent API for the Bifrost SDK.
 // The fluent API provides a more intuitive and user-friendly way to interact with the SDK.
 
-/*
-	func runSearchExample() {
-		fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-		fmt.Println("🎯 Search Example: Full-Text Search")
-		fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+func runSearchExample() {
+	fmt.Println("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+	fmt.Println("🎯 Search Example: Full‑Text Search")
+	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
-		config := getConfig()
-		client := sdk.NewClient(config)
-
-		projectID := getEnv("BIFROST_DATADOCK_ID", "")
-		catalog := getEnv("BIFROST_TEST_CATALOG", "iceberg")
-		schema := getEnv("BIFROST_TEST_SCHEMA", "public")
-		table := getEnv("BIFROST_TEST_TABLE", "text_files")
-
-		if projectID == "" {
-			fmt.Println("⚠️  Skipping: BIFROST_DATADOCK_ID not set")
-			fmt.Println()
-			return
-		}
-
-		fmt.Println("📝 Full-text search query:")
-		fmt.Printf("   DataDock: %s\n", projectID)
-		fmt.Printf("   Searching in: %s.%s.%s\n", catalog, schema, table)
-		fmt.Println()
-
-		// Search for content
-		resp, _ := client.Search().
-			Query("rapport ventes").
-			DataDock(projectID).           // ✅ Use the actual UUID variable
-			Catalog(catalog).              // ✅ Use actual catalog
-			Schema(schema).                // ✅ Use actual schema
-			Table(table).                  // ✅ Use actual table
-			Columns("content", "summary"). // Adjust columns based on your table
-			Limit(10).
-			Execute(context.Background())
-
-		fmt.Println(resp.Results)
-		fmt.Println()
+	// ---- 1️⃣ Build config & client (must be non‑nil) ----
+	cfg := getConfig()
+	if cfg.BaseURL == "" {
+		log.Fatal("❌ Base URL not set – cannot create SDK client")
 	}
-*/
+	client := sdk.NewClient(cfg)
+	if client == nil {
+		log.Fatal("❌ sdk.NewClient returned nil – check configuration")
+	}
+
+	// ---- 2️⃣ Pull required identifiers from env ----
+	projectID := getEnv("BIFROST_DATADOCK_ID", "")
+	catalog := getEnv("BIFROST_TEST_CATALOG", "iceberg")
+	schema := getEnv("BIFROST_TEST_SCHEMA", "public")
+	table := getEnv("BIFROST_TEST_TABLE", "text_files")
+
+	if projectID == "" {
+		fmt.Println("⚠️  Skipping: BIFROST_DATADOCK_ID not set")
+		fmt.Println()
+		return
+	}
+
+	// ---- 3️⃣ Show what we are about to do ----
+	fmt.Println("📝 Full‑text search query:")
+	fmt.Printf("   DataDock: %s\n", projectID)
+	fmt.Printf("   Searching in: %s.%s.%s\n\n", catalog, schema, table)
+
+	// ---- 4️⃣ Build the fluent request ----
+	builder := client.Search().
+		Query("rapport ventes").
+		DataDock(projectID).
+		Catalog(catalog).
+		Schema(schema).
+		Table(table).
+		Columns("content", "summary", "original_file"). // <-- include original_file
+		Limit(10)
+
+	// ---- 5️⃣ Execute and **handle the error** ----
+	results, err := builder.Execute(context.Background())
+	if err != nil {
+		// The builder already validates required fields, so any error here
+		// is a network/API problem or a JSON‑unmarshal issue.
+		log.Fatalf("❌ Search execution failed: %v", err)
+	}
+
+	// ---- 6️⃣ Print a concise summary ----
+	fmt.Printf("✅ Got %d result(s) (took %d ms)\n", results.Total, results.TimeTakenMs)
+
+	// ---- 7️⃣ Walk the results and display the S3 URL ----
+	for i, r := range results.Results {
+		fmt.Printf("\n#%d – Score: %.3f\n", i+1, r.Score)
+		fmt.Printf("   Name   : %s\n", r.Record.Name)
+		fmt.Printf("   Summary: %s\n", r.Record.Summary)
+
+		s3URL := r.Record.OriginalFile.OriginalFilePath
+		if s3URL != "" {
+			fmt.Printf("   S3 URL: %s\n", s3URL)
+		} else {
+			fmt.Println("   S3 URL: <none>")
+		}
+	}
+	fmt.Println()
+}
 
 /*
 func runFluentAPISimpleExample() {
@@ -91,7 +120,6 @@ func runFluentAPISimpleExample() {
 }
 */
 
-/*
 func runFluentAPIWithSelectExample() {
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 	fmt.Println("🎯 Fluent API Example 2: Query with SELECT")
@@ -133,7 +161,6 @@ func runFluentAPIWithSelectExample() {
 	handleResponse(resp, err)
 	fmt.Println()
 }
-*/
 
 /*
 func runFluentAPIComplexExample() {
@@ -178,7 +205,7 @@ func runFluentAPIComplexExample() {
 }
 */
 // Helper functions
-/*
+
 func handleResponse(resp *utils.Response, err error) {
 	if err != nil {
 		fmt.Printf("❌ Error: %s\n", err.Error())
@@ -205,7 +232,6 @@ func handleResponse(resp *utils.Response, err error) {
 		fmt.Printf("📦 Data: %v\n", dataMap)
 	}
 }
-*/
 
 func runS3Example() {
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
@@ -304,7 +330,6 @@ func getEnv(key, fallback string) string {
 	return fallback
 }
 
-/*
 func splitColumns(cols string) []string {
 	if cols == "" {
 		return []string{}
@@ -327,4 +352,3 @@ func splitColumns(cols string) []string {
 	}
 	return result
 }
-*/

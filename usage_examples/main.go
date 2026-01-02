@@ -27,6 +27,8 @@ func main() {
 	fmt.Println()
 
 	runS3Example()
+	runFluentAPIWithSelectExample()
+	runSearchExample()
 
 	fmt.Println()
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━")

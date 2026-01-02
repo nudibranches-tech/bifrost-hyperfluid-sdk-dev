@@ -2,24 +2,61 @@ package fluent
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/nudibranches-tech/bifrost-hyperfluid-sdk-dev/sdk/utils"
 )
 
+type OriginalFilePayload struct {
+	OriginalFilePath string `json:"original_file_path"`
+	SourceDataDockID string `json:"source_data_dock_id"`
+	SourceFileName   string `json:"source_filename"`
+}
+
 type DocumentRecord struct {
-	Name         string `json:"name"`
-	Content      string `json:"content"`
-	Summary      string `json:"summary"`
-	HfContext    string `json:"hf_context"`
-	OriginalFile string `json:"original_file"`
-	Categories   string `json:"categories"`
-	RlsLabels    string `json:"rls_labels"`
+	Name         string              `json:"name"`
+	Content      string              `json:"content"`
+	Summary      string              `json:"summary"`
+	HfContext    string              `json:"hf_context"`
+	OriginalFile OriginalFilePayload `json:"original_file"`
+	Categories   string              `json:"categories"`
+	RlsLabels    string              `json:"rls_labels"`
 }
 
 type DocumentResult struct {
 	Record DocumentRecord `json:"record"`
 	Score  float64        `json:"score"`
+}
+
+func (dr *DocumentRecord) UnmarshalJSON(data []byte) error {
+	type alias DocumentRecord
+	aux := &struct {
+		OriginalFile json.RawMessage `json:"original_file"`
+		*alias
+	}{
+		alias: (*alias)(dr),
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	if len(aux.OriginalFile) == 0 {
+		return nil
+	}
+	if aux.OriginalFile[0] == '"' {
+		var inner string
+		if err := json.Unmarshal(aux.OriginalFile, &inner); err != nil {
+			return fmt.Errorf("unquote failed: %w", err)
+		}
+		if err := json.Unmarshal([]byte(inner), &dr.OriginalFile); err != nil {
+			return fmt.Errorf("inner decode failed: %w", err)
+		}
+	} else {
+		if err := json.Unmarshal(aux.OriginalFile, &dr.OriginalFile); err != nil {
+			return fmt.Errorf("direct decode failed: %w", err)
+		}
+	}
+	return nil
 }
 
 type SearchResults struct {
