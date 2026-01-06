@@ -195,6 +195,18 @@ type ServiceAccountOptions struct {
 	// MaxRetries specifies the maximum number of retry attempts for failed requests (optional).
 	// Defaults to 3 if not specified.
 	MaxRetries int
+
+	// MinIOEndpoint is the MinIO endpoint for S3 operations (required).
+	MinIOEndpoint string
+
+	// MinIOAccessKey is the MinIO access key for S3 operations (required).
+	MinIOAccessKey string
+
+	// MinIOSecretKey is the MinIO secret key for S3 operations (required).
+	MinIOSecretKey string
+
+	// MinIORegion is the MinIO region for S3 operations (required).
+	MinIORegion string
 }
 
 // ToConfiguration converts the ServiceAccount to a utils.Configuration.
@@ -214,6 +226,10 @@ func (sa *ServiceAccount) ToConfiguration(opts ServiceAccountOptions) (utils.Con
 		KeycloakRealm:        realm,
 		KeycloakClientID:     sa.ClientID,
 		KeycloakClientSecret: sa.ClientSecret,
+		MinIOEndpoint:        opts.MinIOEndpoint,
+		MinIOAccessKey:       opts.MinIOAccessKey,
+		MinIOSecretKey:       opts.MinIOSecretKey,
+		MinIORegion:          opts.MinIORegion,
 	}
 
 	// Apply defaults for optional fields
